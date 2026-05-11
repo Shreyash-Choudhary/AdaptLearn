@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AdaptLearn — Quiz</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+</head>
+<body class="quiz-page">
+
+  <div class="grain"></div>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="quiz-container">
+
+    <header class="site-header">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">AdaptLearn</span>
+      </div>
+      <div class="auth-info">
+        <a href="/my-documents" class="btn-documents">📚 My Documents</a>
+        <a href="/" class="btn-back">← Upload PDF</a>
+      </div>
+    </header>
+
+    <!-- Quiz header -->
+    <div class="quiz-header">
+      <div>
+        <h1 class="quiz-title">{% if document_title %}{{ document_title }}{% else %}Your Quiz{% endif %}</h1>
+        <p class="quiz-subtitle">Answer all {{ questions|length }} questions, then submit.</p>
+      </div>
+      <div class="progress-box">
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+        </div>
+        <p class="progress-text"><span id="answeredCount">0</span> / {{ questions|length }} answered</p>
+      </div>
+    </div>
+
+    <!-- Quiz form -->
+    <form action="/submit" method="POST" id="quizForm">
+      <div class="questions-grid">
+
+        {% for q in questions %}
+        {% set outer_index = loop.index0 %}
+        <div class="question-card" id="qcard-{{ outer_index }}">
+
+          <div class="question-top">
+            <span class="q-number">Q{{ loop.index }}</span>
+            <p class="q-text">{{ q.question }}</p>
+          </div>
+
+          <div class="options-grid">
+            {% for key, value in q.options.items() %}
+            <label class="option-label" for="opt-{{ outer_index }}-{{ key }}">
+              <input
+                type="radio"
+                id="opt-{{ outer_index }}-{{ key }}"
+                name="answer_{{ outer_index }}"
+                value="{{ key }}"
+                class="option-radio"
+                data-q="{{ outer_index }}"
+              />
+              <span class="option-key">{{ key }}</span>
+              <span class="option-text">{{ value }}</span>
+            </label>
+            {% endfor %}
+          </div>
+
+        </div>
+        {% endfor %}
+
+      </div>
+
+      <!-- Sticky submit bar -->
+      <div class="submit-bar">
+        <div class="submit-bar-inner">
+          <p class="submit-hint" id="submitHint">Answer all questions to submit.</p>
+          <button type="submit" class="btn-primary btn-submit" id="submitBtn" disabled>
+            <span class="btn-text">Submit Quiz</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </div>
+      </div>
+
+    </form>
+
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

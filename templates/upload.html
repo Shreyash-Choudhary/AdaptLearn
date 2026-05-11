@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AdaptLearn — Upload PDF</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="upload-page">
+    <!-- Background grain overlay -->
+    <div class="grain"></div>
+
+    <!-- Floating blobs -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div class="upload-container">
+      <!-- Header -->
+      <header class="site-header">
+        <div class="logo">
+          <span class="logo-icon">⚡</span>
+          <span class="logo-text">AdaptLearn  </span>
+        </div>
+        {% if current_user.is_authenticated %}
+        <div class="auth-info">
+          <a href="/dashboard" class="btn-documents">📊 Dashboard</a>
+          <a href="/my-documents" class="btn-documents">My Documents</a>
+          <a href="/my-revisions" class="btn-documents">My Revisions</a>
+          <span class="user-greeting"
+            >Welcome, <strong>{{ current_user.username }}</strong></span
+          >
+          <a href="/logout" class="btn-logout">Log Out</a>
+        </div>
+        {% endif %}
+      </header>
+
+      <!-- Hero tagline -->
+      <div class="hero-text">
+        <h1>Turn any PDF into<br /><em>an instant quiz.</em></h1>
+        <p class="hero-sub">
+          Upload your study material. We'll summarise it and generate 10 smart
+          MCQs — powered by AI.
+        </p>
+      </div>
+
+      <!-- ── REVISION NOTIFICATIONS ─────────────────────────────── -->
+      {% if notifications %}
+      <div class="notif-banner">
+        <div class="notif-header">
+          <span class="notif-icon">🔔</span>
+          <span class="notif-title">
+            {{ notifications|length }} Revision{% if notifications|length > 1 %}s{% endif %} Due
+          </span>
+        </div>
+        {% for n in notifications %}
+        <div class="notif-item">
+          <div>
+            <div class="notif-doc">{{ n.document_title }}</div>
+            <div class="notif-when">
+              {% if n.days_overdue == 0 %}Due today{% else %}{{ n.days_overdue }} day{% if n.days_overdue > 1 %}s{% endif %} overdue{% endif %}
+            </div>
+          </div>
+          <a href="/quiz-from-document/{{ n.doc_id }}" class="notif-btn">
+            Start Test →
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <!-- ── END NOTIFICATIONS ──────────────────────────────────── -->
+      {% if error %}
+      <div class="alert alert-error">
+        <span class="alert-icon">⚠</span>
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+
+      <!-- Upload Card -->
+      <div class="upload-card" id="uploadCard">
+        <form
+          action="/upload"
+          method="POST"
+          enctype="multipart/form-data"
+          id="uploadForm"
+        >
+          <!-- Drop zone -->
+          <div class="drop-zone" id="dropZone">
+            <div class="drop-icon">📄</div>
+            <p class="drop-title">Drag &amp; drop your PDF here</p>
+            <p class="drop-sub">or click to browse files</p>
+            <input
+              type="file"
+              id="pdf_file"
+              name="pdf_file"
+              accept=".pdf"
+              class="file-input"
+              required
+            />
+          </div>
+
+          <!-- File preview -->
+          <div class="file-preview hidden" id="filePreview">
+            <span class="file-icon">📋</span>
+            <span class="file-name" id="fileName">No file selected</span>
+            <button
+              type="button"
+              class="btn-clear"
+              id="clearFile"
+              title="Remove file"
+            >
+              ✕
+            </button>
+          </div>
+
+          <!-- Process button -->
+          <button type="submit" class="btn-primary" id="submitBtn" disabled>
+            <span class="btn-text">Generate Quiz</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Steps -->
+      <div class="steps-row">
+        <div class="step-item">
+          <div class="step-num">01</div>
+          <div class="step-label">Upload PDF</div>
+        </div>
+        <div class="step-divider">···</div>
+        <div class="step-item">
+          <div class="step-num">02</div>
+          <div class="step-label">AI Summarises</div>
+        </div>
+        <div class="step-divider">···</div>
+        <div class="step-item">
+          <div class="step-num">03</div>
+          <div class="step-label">Quiz Generated</div>
+        </div>
+        <div class="step-divider">···</div>
+        <div class="step-item">
+          <div class="step-num">04</div>
+          <div class="step-label">Get Your Score</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading overlay (shown while processing) -->
+    <div class="loading-overlay hidden" id="loadingOverlay">
+      <div class="loading-card">
+        <div class="spinner"></div>
+        <p class="loading-title" id="loadingTitle">Processing your PDF…</p>
+        <p class="loading-sub" id="loadingSub">
+          This may take up to a minute. Please wait.
+        </p>
+        <div class="loading-steps">
+          <div class="lstep" id="lstep1">📄 Extracting text</div>
+          <div class="lstep" id="lstep2">🤖 Summarising content</div>
+          <div class="lstep" id="lstep3">✏️ Generating quiz questions</div>
+        </div>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <style>
+      /* ── Revision notification banner — themed ── */
+      .notif-banner {
+        background: var(--card-bg);
+        border: 1px solid rgba(245, 166, 35, 0.25);
+        border-left: 3px solid var(--amber);
+        border-radius: var(--radius);
+        padding: 1.2rem 1.4rem;
+        margin-bottom: 1.5rem;
+        backdrop-filter: blur(10px);
+      }
+      .notif-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.9rem;
+      }
+      .notif-icon { font-size: 1.1rem; }
+      .notif-title {
+        font-family: 'Syne', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--amber);
+        letter-spacing: -0.01em;
+      }
+      .notif-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius-sm);
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+      }
+      .notif-item:last-child { margin-bottom: 0; }
+      .notif-doc {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--chalk);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 260px;
+      }
+      .notif-when {
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .notif-btn {
+        background: linear-gradient(135deg, var(--amber), var(--amber-dim));
+        color: #111;
+        font-weight: 800;
+        font-size: 0.8rem;
+        padding: 6px 16px;
+        border-radius: 8px;
+        text-decoration: none;
+        white-space: nowrap;
+        font-family: 'Syne', sans-serif;
+        transition: opacity 0.2s;
+        flex-shrink: 0;
+      }
+      .notif-btn:hover { opacity: 0.88; }
+    </style>
+  </body>
+</html>

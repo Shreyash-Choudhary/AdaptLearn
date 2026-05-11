@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AdaptLearn — Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+      /* Forgetting curve card */
+      .forgetting-card {
+        margin: 2rem 0;
+        padding: 1.75rem;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        backdrop-filter: blur(12px);
+      }
+      .forgetting-card h3 {
+        font-family: 'Syne', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--chalk);
+        margin-bottom: 0.35rem;
+      }
+      .forgetting-card .sub {
+        font-size: 0.82rem;
+        color: var(--muted);
+        margin-bottom: 1.25rem;
+      }
+      .curve-legend {
+        display: flex;
+        gap: 1.2rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+      }
+      .curve-leg {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.78rem;
+        color: var(--muted);
+      }
+      .curve-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      /* Revision info card */
+      .revision-info-card {
+        margin: 2rem 0;
+        padding: 1.75rem;
+        background: rgba(124, 58, 237, 0.08);
+        border: 1px solid rgba(124, 58, 237, 0.3);
+        border-radius: var(--radius);
+        text-align: center;
+      }
+      .revision-info-card h3 {
+        font-family: 'Syne', sans-serif;
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #a78bfa;
+        margin-bottom: 0.6rem;
+      }
+      .revision-date-row {
+        font-size: 0.9rem;
+        color: var(--muted);
+        margin-bottom: 0.4rem;
+      }
+      .revision-date-row strong { color: var(--chalk); }
+      .urgency-badge {
+        display: inline-block;
+        padding: 0.25rem 0.9rem;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin-bottom: 1.2rem;
+      }
+      .urgency-critical { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+      .urgency-soon     { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+      .urgency-moderate { background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
+      .urgency-good     { background: rgba(34,197,94,0.15);  color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
+
+      #countdown-display {
+        font-family: monospace;
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--amber);
+        letter-spacing: 2px;
+        margin-bottom: 1.2rem;
+      }
+      #start-test-btn { display: none; margin-bottom: 0.8rem; }
+      .start-test-link {
+        display: inline-block;
+        padding: 12px 32px;
+        background: var(--green);
+        color: #fff;
+        border-radius: var(--radius-sm);
+        text-decoration: none;
+        font-family: 'Syne', sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        animation: pulseGreen 1.6s ease-in-out infinite;
+      }
+      @keyframes pulseGreen {
+        0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.35); }
+        50%      { box-shadow: 0 0 0 10px rgba(34,197,94,0); }
+      }
+      .revision-link {
+        font-size: 0.82rem;
+        color: #a78bfa;
+        text-decoration: none;
+      }
+      .revision-link:hover { text-decoration: underline; }
+
+      /* Fix result-actions to allow multiple buttons */
+      .result-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        padding-top: 1rem;
+      }
+      .btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.85rem 1.75rem;
+        background: rgba(124,58,237,0.12);
+        border: 1px solid rgba(124,58,237,0.35);
+        border-radius: var(--radius-sm);
+        color: #a78bfa;
+        font-family: 'Syne', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn-secondary:hover { background: rgba(124,58,237,0.22); }
+
+      /* No results placeholder */
+      .no-results {
+        text-align: center;
+        padding: 2rem;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: var(--radius);
+        color: var(--muted);
+        margin-bottom: 2rem;
+      }
+    </style>
+  </head>
+
+  <body class="result-page">
+    <div class="grain"></div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="result-container">
+
+      <!-- ── Header ── -->
+      <header class="site-header">
+        <div class="logo">
+          <span class="logo-icon">⚡</span>
+          <span class="logo-text">AdaptLearn</span>
+        </div>
+        <div class="auth-info">
+          <a href="/dashboard" class="btn-documents">📊 Dashboard</a>
+          <a href="/my-documents" class="btn-documents">📚 My Documents</a>
+          <a href="/my-revisions" class="btn-documents">📅 My Revisions</a>
+          <a href="/" class="btn-back">← Upload PDF</a>
+        </div>
+      </header>
+
+      <!-- ── Score hero ── -->
+      <div class="score-hero">
+        <div class="score-circle" id="scoreCircle">
+          <svg class="score-ring" viewBox="0 0 120 120">
+            <circle class="ring-bg" cx="60" cy="60" r="52" />
+            <circle class="ring-fill" cx="60" cy="60" r="52"
+              id="ringFill" stroke-dasharray="326.7" stroke-dashoffset="326.7" />
+          </svg>
+          <div class="score-inner">
+            <span class="score-percent" id="scorePercent">0%</span>
+            <span class="score-label">Score</span>
+          </div>
+        </div>
+
+        <div class="score-stats">
+          <div class="stat-chip stat-total">
+            <span class="stat-num">{{ total }}</span>
+            <span class="stat-tag">Total</span>
+          </div>
+          <div class="stat-chip stat-correct">
+            <span class="stat-num">{{ correct }}</span>
+            <span class="stat-tag">Correct</span>
+          </div>
+          <div class="stat-chip stat-wrong">
+            <span class="stat-num">{{ total - correct }}</span>
+            <span class="stat-tag">Wrong</span>
+          </div>
+        </div>
+
+        <div class="perf-badge" id="perfBadge">
+          {% if score_percent >= 80 %}
+            <span class="perf-icon">🏆</span>
+            <span class="perf-text">Excellent! Outstanding performance!</span>
+          {% elif score_percent >= 60 %}
+            <span class="perf-icon">👍</span>
+            <span class="perf-text">Good Job! Keep it up!</span>
+          {% elif score_percent >= 40 %}
+            <span class="perf-icon">📚</span>
+            <span class="perf-text">Fair attempt. Review and retry!</span>
+          {% else %}
+            <span class="perf-icon">💪</span>
+            <span class="perf-text">Keep studying — you'll get there!</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════
+           NEXT REVISION DATE CARD
+           (only shown after /predict is called)
+      ════════════════════════════════════════ -->
+      {% if revision_info %}
+      <div class="revision-info-card">
+        <h3>⏰ Next Revision Scheduled</h3>
+
+        <p class="revision-date-row">
+          Revise in <strong>{{ revision_info.revise_in_days }} days</strong>
+          &nbsp;·&nbsp;
+          Date: <strong>{{ revision_info.revision_date }}</strong>
+        </p>
+
+        <span class="urgency-badge urgency-{{ revision_info.urgency }}">
+          {{ revision_info.urgency | upper }}
+        </span>
+
+        <div id="countdown-display">Calculating...</div>
+
+        <div id="start-test-btn">
+          {% if document_id %}
+          <a href="/quiz-from-document/{{ document_id }}" class="start-test-link">
+            🎯 Start Revision Test Now →
+          </a>
+          {% else %}
+          <a href="/my-documents" class="start-test-link">
+            🎯 Go to My Documents →
+          </a>
+          {% endif %}
+          <p style="font-size:0.78rem; color:var(--muted); margin-top:0.5rem;">
+            Fresh quiz from same document — no re-upload needed
+          </p>
+        </div>
+
+        <br/>
+        <a href="/my-revisions" class="revision-link">
+          View all revision schedules →
+        </a>
+      </div>
+
+      <script>
+      (function() {
+        var target = new Date("{{ revision_info.revision_date }}" + "T00:00:00");
+        function tick() {
+          var diff = target - new Date();
+          if (diff <= 0) {
+            document.getElementById("countdown-display").textContent = "🎯 Time to revise!";
+            document.getElementById("countdown-display").style.color = "#22c55e";
+            document.getElementById("start-test-btn").style.display = "block";
+            return;
+          }
+          var d = Math.floor(diff / 86400000);
+          var h = Math.floor((diff % 86400000) / 3600000);
+          var m = Math.floor((diff % 3600000) / 60000);
+          var s = Math.floor((diff % 60000) / 1000);
+          document.getElementById("countdown-display").textContent =
+            d + "d  " + h + "h  " + m + "m  " + s + "s";
+        }
+        tick();
+        setInterval(tick, 1000);
+      })();
+      </script>
+      {% endif %}
+
+      <!-- ════════════════════════════════════════
+           FORGETTING CURVE CHART
+      ════════════════════════════════════════ -->
+      <div class="forgetting-card">
+        <h3>📉 Your Forgetting Curve</h3>
+        <p class="sub">
+          Ebbinghaus model — memory without revision (red) vs. with your scheduled revisions (green).
+          Orange dots = revision points.
+        </p>
+        <div class="curve-legend">
+          <div class="curve-leg">
+            <div class="curve-dot" style="background:#ef4444;"></div>
+            Without revision
+          </div>
+          <div class="curve-leg">
+            <div class="curve-dot" style="background:#22c55e;"></div>
+            With revision
+          </div>
+          <div class="curve-leg">
+            <div class="curve-dot" style="background:#f5a623;"></div>
+            Revision points
+          </div>
+        </div>
+        <canvas id="forgettingChart" style="max-height:280px;"></canvas>
+      </div>
+
+      <!-- ════════════════════════════════════════
+           QUESTION REVIEW — marks + correct answers
+      ════════════════════════════════════════ -->
+      {% if results %}
+      <h2 class="section-title">📋 Question Review</h2>
+      <div class="review-list">
+        {% for r in results %}
+        <div class="review-card {% if r.is_correct %}correct{% else %}wrong{% endif %}">
+          <div class="review-top">
+            <span class="review-num">Q{{ loop.index }}</span>
+            <span class="review-verdict">
+              {% if r.is_correct %}✓ Correct{% else %}✗ Wrong{% endif %}
+            </span>
+          </div>
+          <p class="review-question">{{ r.question }}</p>
+          <div class="review-options">
+            {% for key, value in r.options.items() %}
+            <div class="review-option
+              {% if key == r.correct_answer %}opt-correct{% endif %}
+              {% if key == r.user_answer and not r.is_correct %}opt-user-wrong{% endif %}">
+              <span class="opt-key">{{ key }}</span>
+              <span class="opt-val">{{ value }}</span>
+              {% if key == r.correct_answer and key == r.user_answer %}
+                <span class="opt-tag correct-tag">✓ Your answer</span>
+              {% elif key == r.correct_answer %}
+                <span class="opt-tag correct-tag">✓ Correct answer</span>
+              {% elif key == r.user_answer and not r.is_correct %}
+                <span class="opt-tag wrong-tag">✗ Your answer</span>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% else %}
+      <div class="no-results">
+        <p style="font-size:1rem; margin-bottom:0.5rem;">📋 Question review not available.</p>
+        <p style="font-size:0.85rem;">Session may have expired. Take a quiz to see your answers.</p>
+        <a href="/my-documents" style="color:#a78bfa; text-decoration:none; font-size:0.85rem;">
+          Go to My Documents →
+        </a>
+      </div>
+      {% endif %}
+
+      <!-- ── Actions ── -->
+      <div class="result-actions">
+        <a href="/" class="btn-primary">
+          <span class="btn-text">Upload New PDF</span>
+          <span class="btn-arrow">→</span>
+        </a>
+        <a href="/my-documents" class="btn-secondary">
+          📚 My Documents
+        </a>
+      </div>
+
+    </div><!-- /result-container -->
+
+    <!-- Score percent injected for script.js -->
+    <script>
+      const SCORE_PERCENT = parseFloat("{{ score_percent }}") || 0;
+      const REVISE_IN_DAYS = {{ revision_info.revise_in_days if revision_info else 'null' }};
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    <!-- ── Forgetting curve chart ── -->
+    <script>
+    (function() {
+      var score = SCORE_PERCENT;
+      // Memory strength: higher score = slower decay
+      var S = Math.max((score / 100) * 10, 0.5);
+
+      var days = [];
+      for (var i = 0; i <= 60; i++) days.push(i);
+
+      // Without revision: R(t) = 100 * e^(-t/S)
+      var withoutRevision = days.map(function(d) {
+        return +Math.max(Math.exp(-d / S) * 100, 0).toFixed(1);
+      });
+
+      // With revision: reset at scheduled intervals, memory strength grows each time
+      var revInterval = REVISE_IN_DAYS || 7;
+      var revPoints = [];
+      for (var r = Math.round(revInterval); r <= 60; r += Math.round(revInterval)) {
+        revPoints.push(r);
+      }
+
+      var withRevision = [];
+      var lastRev = 0, baseRet = 100, strength = S;
+      for (var d = 0; d <= 60; d++) {
+        if (revPoints.indexOf(d) !== -1 && d > 0) {
+          lastRev = d;
+          strength = strength * 1.4; // each revision strengthens memory
+          baseRet = Math.min(baseRet + 12, 98);
+        }
+        var elapsed = d - lastRev;
+        withRevision.push(+Math.max(baseRet * Math.exp(-elapsed / strength), 0).toFixed(1));
+      }
+
+      var pointRadii = days.map(function(d) { return revPoints.indexOf(d) !== -1 ? 7 : 0; });
+      var pointColors = days.map(function(d) { return revPoints.indexOf(d) !== -1 ? '#f5a623' : 'transparent'; });
+
+      var ctx = document.getElementById('forgettingChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: days,
+          datasets: [
+            {
+              label: 'Without revision',
+              data: withoutRevision,
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239,68,68,0.06)',
+              borderWidth: 2.5,
+              fill: true,
+              tension: 0.4,
+              pointRadius: 0,
+            },
+            {
+              label: 'With revision',
+              data: withRevision,
+              borderColor: '#22c55e',
+              backgroundColor: 'rgba(34,197,94,0.06)',
+              borderWidth: 2.5,
+              fill: true,
+              tension: 0.4,
+              pointRadius: pointRadii,
+              pointBackgroundColor: pointColors,
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: 'rgba(11,15,26,0.95)',
+              titleColor: '#f0ece4',
+              bodyColor: '#8a97aa',
+              borderColor: 'rgba(255,255,255,0.08)',
+              borderWidth: 1,
+              callbacks: {
+                title: function(ctx) { return 'Day ' + ctx[0].label; },
+                label: function(ctx) {
+                  return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(0) + '%';
+                },
+                afterBody: function(ctx) {
+                  var d = parseInt(ctx[0].label);
+                  if (revPoints.indexOf(d) !== -1) return ['📌 Revision point'];
+                  return [];
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: 'Days since learning', color: '#8a97aa', font: { size: 11 } },
+              ticks: { color: '#8a97aa', maxTicksLimit: 10 },
+              grid: { color: 'rgba(255,255,255,0.04)' }
+            },
+            y: {
+              min: 0, max: 100,
+              title: { display: true, text: 'Memory retention (%)', color: '#8a97aa', font: { size: 11 } },
+              ticks: { color: '#8a97aa', callback: function(v) { return v + '%'; } },
+              grid: { color: 'rgba(255,255,255,0.04)' }
+            }
+          }
+        }
+      });
+    })();
+    </script>
+
+  </body>
+</html>

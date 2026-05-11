@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AdaptLearn — Sign Up</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+</head>
+<body class="auth-page">
+
+  <!-- Background grain overlay -->
+  <div class="grain"></div>     
+
+  <!-- Floating blobs -->
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+
+  <div class="auth-container">
+
+    <!-- Header -->
+    <header class="site-header">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">AdaptLearn</span>
+      </div>
+      <p class="logo-sub">AI-Powered Adaptive Learning System</p>
+    </header>
+
+    <!-- Hero tagline -->
+    <div class="hero-text">
+      <h1>Create Your Account</h1>
+      <p class="hero-sub">Join AdaptLearn and start learning intelligently.</p>
+    </div>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <span class="alert-icon">{% if category == 'error' %}⚠{% else %}✓{% endif %}</span>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Register Form Card -->
+    <div class="auth-card">
+      <form action="/register" method="POST" id="registerForm">
+        
+        <!-- Full Name field -->
+        <div class="form-group">
+          <label for="full_name" class="form-label">Full Name</label>
+          <input 
+            type="text" 
+            id="full_name" 
+            name="full_name" 
+            class="form-input" 
+            placeholder="Your full name"
+          />
+        </div>
+
+        <!-- Username field -->
+        <div class="form-group">
+          <label for="username" class="form-label">Username</label>
+          <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            class="form-input" 
+            placeholder="Choose a unique username"
+            required
+            autofocus
+          />
+        </div>
+
+        <!-- Email field -->
+        <div class="form-group">
+          <label for="email" class="form-label">Email Address</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            class="form-input" 
+            placeholder="your-email@example.com"
+            required
+          />
+        </div>
+
+        <!-- Password field -->
+        <div class="form-group">
+          <label for="password" class="form-label">Password</label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            class="form-input" 
+            placeholder="At least 6 characters"
+            required
+          />
+          <small class="form-hint">Must be at least 6 characters long</small>
+        </div>
+
+        <!-- Confirm Password field -->
+        <div class="form-group">
+          <label for="password_confirm" class="form-label">Confirm Password</label>
+          <input 
+            type="password" 
+            id="password_confirm" 
+            name="password_confirm" 
+            class="form-input" 
+            placeholder="Re-enter your password"
+            required
+          />
+        </div>
+
+        <!-- Terms acceptance (optional) -->
+        <div class="form-checkbox">
+          <input type="checkbox" id="terms" name="terms" />
+          <label for="terms">I agree to the Terms of Service</label>
+        </div>
+
+        <!-- Sign up button -->
+        <button type="submit" class="btn-primary btn-block">
+          <span class="btn-text">Create Account</span>
+          <span class="btn-arrow">→</span>
+        </button>
+
+      </form>
+
+      <!-- Divider -->
+      <div class="form-divider">or</div>
+
+      <!-- Login link -->
+      <div class="auth-footer">
+        <p>Already have an account? <a href="/login" class="auth-link">Log in here</a></p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
